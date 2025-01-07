@@ -73,4 +73,3 @@ HEALTHCHECK --interval=1m --timeout=10s \
 # Entrypoint and default command
 ENTRYPOINT ["/usr/bin/bash"]
 CMD ["/run.sh"]
-CMD ["runsvdir", "/app"]
