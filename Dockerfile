@@ -25,6 +25,8 @@ ENV ACESTREAM_VERSION="3.2.3_ubuntu_22.04_x86_64_py3.10" \
     ALLOW_REMOTE_ACCESS="no" \
     HTTP_PORT=6878 \
     EXTRA_FLAGS=''
+    M3U8_URL=""
+    CRON_M3U8="0 1 * * *"
 
 # Set shell for pipefail
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -32,6 +34,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # Install dependencies
 RUN apt-get update \
   && apt-get install --no-install-recommends -y \
+      cron \
       python3.10 \
       ca-certificates \
       wget \
@@ -43,6 +46,7 @@ RUN apt-get update \
       unzip \
       bash \
       ncurses-bin \
+      apache2 \
   && rm -rf /var/lib/apt/lists/*
 
 # Configure AceStream
@@ -61,6 +65,27 @@ COPY run.sh /
 RUN chmod +x /run.sh \
     && find /app -name run | xargs chmod u+x \
     && find /app -name *.sh | xargs chmod u+x
+
+# Crear un script para descargar la lista M3U8
+COPY <<EOF /download_m3u8.sh
+#!/bin/bash
+if [[ -n "$M3U8_URL" ]]; then
+  wget -q -O /var/www/html/playlist.m3u8 "$M3U8_URL" || echo "Failed to download M3U8"
+fi
+EOF
+RUN chmod +x /download_m3u8.sh
+
+# Configurar cronjob
+RUN echo "$CRON_M3U8 /download_m3u8.sh >> /var/log/cron.log 2>&1" > /etc/cron.d/m3u8-cron \
+  && chmod 0644 /etc/cron.d/m3u8-cron \
+  && crontab /etc/cron.d/m3u8-cron
+
+# Configure Apache
+RUN mkdir -p /var/www/html \
+  && echo "<h1>Apache Server is Running</h1>" > /var/www/html/index.html \
+  && a2enmod rewrite \
+  && chown -R www-data:www-data /var/www/html \
+  && chmod -R 755 /var/www/html
 
 # Expose ports
 EXPOSE 6878/tcp
