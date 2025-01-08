@@ -8,5 +8,11 @@ fi
 # Ejecuta el motor AceStream
 /opt/acestream/start-engine --client-console --http-port $HTTP_PORT $EXTRA_FLAGS &
 
-# Ejecuta runsvdir como el proceso principal
-exec runsvdir /app
+# Inicia el servicio cron para gestionar tareas programadas
+service cron start
+
+# Ejecuta runsvdir como un proceso adicional
+runsvdir /app &
+
+# Inicia Apache como proceso principal
+exec apachectl -D FOREGROUND
