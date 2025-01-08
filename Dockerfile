@@ -47,6 +47,7 @@ RUN apt-get update \
       bash \
       ncurses-bin \
       apache2 \
+      supervisor \
   && rm -rf /var/lib/apt/lists/*
 
 # Configure AceStream
@@ -62,6 +63,7 @@ RUN wget --progress=dot:giga "https://download.acestream.media/linux/acestream_$
 # Copy scripts and set permissions
 COPY app /app
 COPY run.sh /
+COPY supervisord.conf /etc/supervisor/supervisord.conf
 RUN chmod +x /run.sh \
     && find /app -name run | xargs chmod u+x \
     && find /app -name *.sh | xargs chmod u+x
@@ -97,4 +99,4 @@ HEALTHCHECK --interval=1m --timeout=10s \
 
 # Entrypoint and default command
 ENTRYPOINT ["/usr/bin/bash"]
-CMD ["/run.sh"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
